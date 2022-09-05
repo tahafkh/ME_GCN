@@ -143,6 +143,7 @@ def sample_data(data, sample_size):
     return new_data
 
 def prepare_data(args):
+    wordsegment.load()
     train, test = read_file(args['data'])
     if not args['use_all']:
         train = sample_data(train, args['train_size'])
