@@ -107,14 +107,12 @@ def read_file(data):
         train = pd.read_csv(os.path.join(RAW_DATA_DIRECTORY, train_name), sep='\t', keep_default_na=False)
         train_ids = np.array(train['id'].values)
         train_tweets = np.array(train['tweet'].values)
-        train.loc[:, 'subtask_a'] = train['subtask_a'].map({'OFF':1, 'NOT':0})
         train_labels = np.array(train['subtask_a'].values)
 
         test_name = 'testset-levela.tsv'
         test = pd.read_csv(os.path.join(RAW_DATA_DIRECTORY, test_name), sep='\t', keep_default_na=False)
         test_ids = np.array(test['id'].values)
         test_tweets = np.array(test['tweet'].values)
-        test.loc[:, 'subtask_a'] = test['subtask_a'].map({'OFF':1, 'NOT':0})
         test_labels = np.array(test['subtask_a'].values)
 
     elif data == 'de':
@@ -122,14 +120,12 @@ def read_file(data):
         train = pd.read_csv(os.path.join(RAW_DATA_DIRECTORY, train_name), sep='\t', keep_default_na=False, header=None)
         train_ids = np.array(range(1,len(train)+1))
         train_tweets = np.array(train[0].values)
-        train.loc[:, 1] = train[1].map({'OFFENSE': 1, 'OTHER': 0})
         train_labels = np.array(train[1].values)
 
         test_name = 'germeval2018.test.txt'
         test = pd.read_csv(os.path.join(RAW_DATA_DIRECTORY, test_name), sep='\t', keep_default_na=False, header=None)
         test_ids = np.array(range(1,len(test)+1))
         test_tweets = np.array(test[0].values)
-        test.loc[:, 1] = test[1].map({'OFFENSE': 1, 'OTHER': 0})
         test_labels = np.array(test[1].values)
     
     else:
