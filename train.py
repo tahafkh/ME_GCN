@@ -10,7 +10,7 @@ from nltk.corpus import stopwords
 
 from gensim.models import Word2Vec
 from gensim.models import FastText
-from glove import Corpus, Glove
+# from glove import Corpus, Glove
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 
 from sklearn.preprocessing import LabelEncoder
