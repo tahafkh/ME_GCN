@@ -5,7 +5,7 @@ def get_args():
 
     parser.add_argument('--word_embedding', type=int, default=0,
                         help='0: word2vec, 1: fasttext, 2: glove')
-    parser.add_argument('--dim', type=int, default=25,
+    parser.add_argument('--dim', type=int, default=24,
                         help='Edge embedding dimension')
     parser.add_argument('--threshold', type=int, default=15,
                         help='Threshold for d2d edge weight')
