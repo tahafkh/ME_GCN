@@ -11,6 +11,11 @@ from gensim.models import FastText
 
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 
+from transformers import (
+        BertModel, BertTokenizer, \
+        XLMModel, XLMTokenizer, \
+        XLMRobertaModel, XLMRobertaTokenizer)
+
 def ordered_word_pair(a, b):
     if a > b:
         return (b, a)
@@ -102,3 +107,13 @@ def get_doc_embeddings(args, tokenize_sentences):
             doc2vec_emb.append(model.docvecs[i])
         doc2vec_npy = np.array(doc2vec_emb)
     return doc2vec_npy
+
+def get_model_cls(model):
+    if model == "bert":
+        return "bert-base-multilingual-uncased", BertTokenizer, BertModel
+    elif model == "xlm":
+        return "xlm-mlm-17-1280", XLMTokenizer, XLMModel
+    elif model == "xlmr":
+        return "xlm-roberta-base", XLMRobertaTokenizer, XLMRobertaModel
+    else:
+        raise NameError(f"Unsupported model {model}.")

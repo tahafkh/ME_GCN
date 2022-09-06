@@ -4,6 +4,11 @@ import torch.nn.functional as F
 
 from layers import GraphConvolution
 
+from transformers import (
+        BertModel, BertTokenizer, \
+        XLMModel, XLMTokenizer, \
+        XLMRobertaForSequenceClassification, XLMRobertaTokenizer)
+
 class MultiGCN(nn.Module):
     def __init__(self, nfeat, nhid, nclass, dropout, dim, pooling):
         super(MultiGCN, self).__init__()
@@ -30,3 +35,17 @@ class MultiGCN(nn.Module):
         if self.pooling == 'min':
             return torch.min(x,0)[0]
             
+class MyBert(nn.Module):
+    def __init__(self, bert, word_embedding, hidden_size=768, num_classes=2):
+        super(MyBert, self).__init__()
+        self.bert = bert
+        self.fc1 = nn.Linear(hidden_size, word_embedding)
+        self.fc2 = nn.Linear(word_embedding, num_classes)
+        self.dropout = nn.Dropout(0.1)
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, x):
+        _, pooled_output = self.bert(x, output_all_encoded_layers=False)
+        pooled_output = self.dropout(pooled_output)
+        out = self.fc(pooled_output)
+        return self.softmax(out)
