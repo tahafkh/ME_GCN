@@ -89,6 +89,7 @@ def get_word_embeddings(args, tokenize_sentences, word_list):
         glove.add_dictionary(corpus.dictionary)
 
         word_emb_dict = {word: glove.word_vectors[glove.dictionary[word]].tolist() for word in word_list}
+    return word_emb_dict
 
 def get_doc_embeddings(args, tokenize_sentences):
     embedding = args['doc_embedding']
@@ -101,4 +102,3 @@ def get_doc_embeddings(args, tokenize_sentences):
             doc2vec_emb.append(model.docvecs[i])
         doc2vec_npy = np.array(doc2vec_emb)
     return doc2vec_npy
-    
