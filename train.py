@@ -8,7 +8,7 @@ import scipy.sparse as sp
 import nltk
 from nltk.corpus import stopwords
 
-from gensim.models.doc2vec import Doc2Vec, TaggedDocument
+
 
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report
@@ -58,22 +58,12 @@ if __name__=='__main__':
 
     word_emb_dict = get_word_embeddings(args, tokenize_sentences, word_list)
 
-    documents = [TaggedDocument(doc, [i]) for i, doc in enumerate(tokenize_sentences)]
-    model = Doc2Vec(documents, vector_size=args['dim'], window=5, min_count=1, workers=4, iter=200)
-
-    doc2vec_emb = []
-    for i in range(len(documents)):
-        doc2vec_emb.append(model.docvecs[i])
-    doc2vec_npy = np.array(doc2vec_emb)
-
+    doc2vec_npy = get_doc_embeddings(args, tokenize_sentences)
 
     node_size = train_size + vocab_length + test_size
     adj_tensor = []
 
-
-    # ## d2w: tfidf
-
-
+    ## d2w: tfidf
     tfidf_row = []
     tfidf_col = []
     tfidf_weight = []

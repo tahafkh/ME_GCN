@@ -9,6 +9,8 @@ from gensim.models import Word2Vec
 from gensim.models import FastText
 # from glove import Corpus, Glove
 
+from gensim.models.doc2vec import Doc2Vec, TaggedDocument
+
 def ordered_word_pair(a, b):
     if a > b:
         return (b, a)
@@ -87,3 +89,16 @@ def get_word_embeddings(args, tokenize_sentences, word_list):
         glove.add_dictionary(corpus.dictionary)
 
         word_emb_dict = {word: glove.word_vectors[glove.dictionary[word]].tolist() for word in word_list}
+
+def get_doc_embeddings(args, tokenize_sentences):
+    embedding = args['doc_embedding']
+    if embedding == 'doc2vec':
+        documents = [TaggedDocument(doc, [i]) for i, doc in enumerate(tokenize_sentences)]
+        model = Doc2Vec(documents, vector_size=args['dim'], window=5, min_count=1, workers=4, iter=200)
+
+        doc2vec_emb = []
+        for i in range(len(documents)):
+            doc2vec_emb.append(model.docvecs[i])
+        doc2vec_npy = np.array(doc2vec_emb)
+    return doc2vec_npy
+    

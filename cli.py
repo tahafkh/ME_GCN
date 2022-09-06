@@ -5,6 +5,8 @@ def get_args():
 
     parser.add_argument('--word_embedding', type=str, default='word2vec',
                         help='Word embedding type.')
+    parser.add_argument('--doc_embedding', type=str, default='doc2vec',
+                        help='Document embedding type.')
     parser.add_argument('--dim', type=int, default=25,
                         help='Edge embedding dimension')
     parser.add_argument('--threshold', type=int, default=15,
