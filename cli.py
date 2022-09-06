@@ -3,9 +3,9 @@ import argparse
 def get_args():
     parser = argparse.ArgumentParser(description='ME-GCN for Offensive Language Detection')
 
-    parser.add_argument('--word_embedding', type=int, default=0,
-                        help='0: word2vec, 1: fasttext, 2: glove')
-    parser.add_argument('--dim', type=int, default=24,
+    parser.add_argument('--word_embedding', type=str, default='word2vec',
+                        help='Word embedding type.')
+    parser.add_argument('--dim', type=int, default=25,
                         help='Edge embedding dimension')
     parser.add_argument('--threshold', type=int, default=15,
                         help='Threshold for d2d edge weight')

@@ -29,3 +29,4 @@ class MultiGCN(nn.Module):
             return torch.max(x,0)[0]
         if self.pooling == 'min':
             return torch.min(x,0)[0]
+            

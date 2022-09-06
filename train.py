@@ -8,9 +8,6 @@ import scipy.sparse as sp
 import nltk
 from nltk.corpus import stopwords
 
-from gensim.models import Word2Vec
-from gensim.models import FastText
-# from glove import Corpus, Glove
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 
 from sklearn.preprocessing import LabelEncoder
@@ -43,72 +40,23 @@ if __name__=='__main__':
     unique_labels=np.unique(train_labels + test_labels)
 
     num_class = len(unique_labels)
-    lEnc = LabelEncoder()
-    lEnc.fit(unique_labels)
+    encoder = LabelEncoder()
+    encoder.fit(unique_labels)
 
-    train_labels = lEnc.transform(train_labels)
-    test_labels = lEnc.transform(test_labels)
+    train_labels = encoder.transform(train_labels)
+    test_labels = encoder.transform(test_labels)
 
-    labels = train_labels.tolist()+test_labels.tolist()
+    labels = train_labels.tolist() + test_labels.tolist()
     labels = torch.LongTensor(labels).to(device)
 
-    nltk.download('stopwords')
-    if args['data'] == 'en':
-        stop_words = set(stopwords.words('english'))
-
-    original_word_freq = {}  # to remove rare words
-    for sentence in original_sentences:
-        word_list = sentence.split()
-        for word in word_list:
-            if word in original_word_freq:
-                original_word_freq[word] += 1
-            else:
-                original_word_freq[word] = 1   
-
-    tokenize_sentences = []
-    word_list_dict = {}
-    for sentence in original_sentences:
-        word_list_temp = sentence.split()
-        doc_words = []
-        for word in word_list_temp:
-            if word not in stop_words and original_word_freq[word] >= args['min_frequency']:
-                doc_words.append(word)
-                word_list_dict[word] = 1
-        tokenize_sentences.append(doc_words)
-    word_list = list(word_list_dict.keys())
-    vocab_length = len(word_list)
+    tokenize_sentences, word_list, vocab_length = tokenize(args, original_sentences)
 
     del original_sentences
 
     #word to id dict
-    word_id_map = {}
-    for i in range(vocab_length):
-        word_id_map[word_list[i]] = i           
+    word_id_map = {word_list[i]: i for i in range(vocab_length)}         
 
-
-    if args['word_embedding'] == 0:
-        wv_cbow_model = Word2Vec(sentences=tokenize_sentences, size=args['dim'], window=5, min_count=0, workers=4, sg=0, iter=200)
-        word_emb_dict = {}
-        for word in word_list:
-            word_emb_dict[word] = wv_cbow_model[word].tolist()
-    elif args['word_embedding'] == 1:
-        ft_sg_model = FastText(sentences=tokenize_sentences, size=args['dim'], window=5, min_count=0, workers=4, sg=0, iter = 200)
-        word_emb_dict = {}
-        for word in word_list:
-            word_emb_dict[word] = ft_sg_model[word].tolist()
-    elif args['word_embedding'] == 2:
-
-        corpus = Corpus() 
-        corpus.fit(tokenize_sentences, window=10)
-
-        glove = Glove(no_components=args['dim'], learning_rate=0.05) 
-        glove.fit(corpus.matrix, epochs=200, no_threads=4, verbose=True)
-        glove.add_dictionary(corpus.dictionary)
-
-        word_emb_dict = {}
-        for word in word_list:
-            word_emb_dict[word] = glove.word_vectors[glove.dictionary[word]].tolist()
-
+    word_emb_dict = get_word_embeddings(args, tokenize_sentences, word_list)
 
     documents = [TaggedDocument(doc, [i]) for i, doc in enumerate(tokenize_sentences)]
     model = Doc2Vec(documents, vector_size=args['dim'], window=5, min_count=1, workers=4, iter=200)
@@ -275,7 +223,6 @@ if __name__=='__main__':
     features = torch.FloatTensor(np.array(features)).to(device)
 
     # Training
-
     real_train_size = int((1-args['val_portion'])*train_size)
     val_size = train_size-real_train_size
 
