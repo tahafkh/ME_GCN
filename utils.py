@@ -171,6 +171,7 @@ def set_model(args, info_dict):
     bert = model_cls.from_pretrained(model_name, return_dict=False)
     mybert = MyBert(bert, args['dim'], info_dict['num_class'])
     mybert.fc1.register_forward_hook(get_activation('fc1'))
+    finetune(args, info_dict)
 
 def get_outputs(args, info_dict, key):
     info = info_dict[key]
