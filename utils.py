@@ -23,6 +23,18 @@ mybert = None
 tokenizer = None
 activation = {}
 
+def create_dataloader(args, inputs, labels):
+    encoded_dict = tokenizer.batch_encode_plus(
+            inputs,                           
+            add_special_tokens=True,      
+            max_length=args['max_length'],        
+            pad_to_max_length=True,
+            return_attention_mask=True,   
+            return_tensors='pt',
+    )
+    dataset = TensorDataset(encoded_dict["input_ids"], encoded_dict["attention_mask"], torch.tensor(labels))
+    return DataLoader(dataset, batch_size=args['batch_size'], shuffle=False)
+
 def get_activation(name):
     def hook(model, input, output):
         global activation
@@ -119,6 +131,38 @@ def get_glove_embeddings(args, tokenize_sentences, word_list):
     word_emb_dict = {word: glove.word_vectors[glove.dictionary[word]].tolist() for word in word_list}
     return word_emb_dict
 
+def finetune(args, info_dict):
+    train_size = info_dict['train_size']
+    train = info_dict['tokenize_sentences'][:train_size]
+    labels = info_dict['all_labels'][:train_size]
+    dataloader = create_dataloader(args, train, labels)
+
+    global mybert
+
+    criterion = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(mybert.parameters(), lr=args['lr'], weight_decay=args['decay'])
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    torch.cuda.empty_cache()
+    mybert.to(device)
+
+    mybert.train()
+    epochs = 5
+    for epoch in range(epochs):
+        for batch in dataloader:
+            input_ids = batch[0].to(device)
+            input_mask = batch[1].to(device)
+            labels = batch[2].to(device)
+            optimizer.zero_grad()
+
+            with torch.set_grad_enabled(True):
+                out = mybert(input_ids, 
+                            attention_mask=input_mask)
+                loss = criterion(out, labels)
+                loss.backward()
+                optimizer.step()
+    mybert.to('cpu')
+
+
 def set_model(args, info_dict):
     global mybert
     global tokenizer
@@ -127,18 +171,6 @@ def set_model(args, info_dict):
     bert = model_cls.from_pretrained(model_name)
     mybert = MyBert(bert, args['dim'], info_dict['num_class'])
     mybert.fc1.register_forward_hook(get_activation('fc1'))
-
-def create_dataloader(args, inputs, labels):
-    encoded_dict = tokenizer.batch_encode_plus(
-            inputs,                           
-            add_special_tokens=True,      
-            max_length=args['max_length'],        
-            pad_to_max_length=True,
-            return_attention_mask=True,   
-            return_tensors='pt',
-    )
-    dataset = TensorDataset(encoded_dict["input_ids"], encoded_dict["attention_mask"], torch.tensor(labels))
-    return DataLoader(dataset, batch_size=args['batch_size'], shuffle=False)
 
 def get_outputs(args, info_dict, key):
     info = info_dict[key]
@@ -158,12 +190,14 @@ def get_outputs(args, info_dict, key):
             out = mybert(input_ids, 
                         attention_mask=input_mask)
             outputs.append(activation['fc1'])
+    mybert.to('cpu')
     return np.concatenate(outputs)
     
 
 def get_bert_embeddings(args, info_dict, key):
     if mybert is None:
         set_model(args, info_dict)
+    return get_outputs(args, info_dict, key)
     
 
 def get_word_embeddings(args, info_dict):
@@ -177,7 +211,8 @@ def get_word_embeddings(args, info_dict):
     elif embedding == 'glove':
         return get_glove_embeddings(args, tokenize_sentences, word_list)
     elif embedding == 'bert':
-        return get_bert_embeddings(args, info_dict, 'tokenized_sentences')
+        embeddings = get_bert_embeddings(args, info_dict, 'word_list')
+        return {word: embeddings[i].tolist() for i, word in enumerate(word_list)}
     else:
         raise NameError(f"Unsupported embedding {embedding}.")
 
@@ -194,6 +229,6 @@ def get_doc_embeddings(args, info_dict):
     if embedding == 'doc2vec':
         return get_doc2vec_embeddings(args, tokenize_sentences)
     elif embedding == 'bert':
-        return get_bert_embeddings(args, info_dict, 'word_list')
+        return get_bert_embeddings(args, info_dict, 'tokenize_sentences')
     else:
         raise NameError(f"Unsupported embedding {embedding}.")
