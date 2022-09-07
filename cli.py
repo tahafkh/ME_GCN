@@ -43,4 +43,6 @@ def get_args():
                         help='Model to use as node features.')
     parser.add_argument('--max_length', type=int, default=150,
                         help='Maximum sequence length.')
+    parser.add_argument('--batch_size', type=int, default=64,
+                        help='Batch size.')
     return vars(parser.parse_args())

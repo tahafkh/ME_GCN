@@ -1,6 +1,7 @@
 import scipy.sparse as sp
 import numpy as np
 import torch
+from torch.utils.data import DataLoader, TensorDataset
 
 import nltk
 from nltk.corpus import stopwords
@@ -16,7 +17,17 @@ from transformers import (
         XLMModel, XLMTokenizer, \
         XLMRobertaModel, XLMRobertaTokenizer)
 
+from models import MyBert
+
 mybert = None
+tokenizer = None
+activation = {}
+
+def get_activation(name):
+    def hook(model, input, output):
+        global activation
+        activation[name] = output.detach().cpu().numpy()
+    return hook
 
 def ordered_word_pair(a, b):
     if a > b:
@@ -108,26 +119,52 @@ def get_glove_embeddings(args, tokenize_sentences, word_list):
     word_emb_dict = {word: glove.word_vectors[glove.dictionary[word]].tolist() for word in word_list}
     return word_emb_dict
 
-def finetune(args, info_dict, key):
-    info = info_dict[key]
+def set_model(args, info_dict):
     global mybert
-    if mybert is None:
-        model_name, tokenizer_cls, model_cls = get_model_cls(args['model'])
-        tokenizer = tokenizer_cls.from_pretrained(model_name)
-        mybert = model_cls.from_pretrained(model_name)
-        mybert.to(args['device'])
-    tokenized = tokenizer(info, return_tensors="pt", padding=True, truncation=True)
-    input_ids = tokenized["input_ids"].to(args['device'])
-    attention_mask = tokenized["attention_mask"].to(args['device'])
-    with torch.no_grad():
-        last_hidden_states = mybert(input_ids, attention_mask=attention_mask)
-    return last_hidden_states[0][:,0,:].cpu().numpy()
+    global tokenizer
+    model_name, tokenizer_cls, model_cls = get_model_cls(args['model'])
+    tokenizer = tokenizer_cls.from_pretrained(model_name)
+    bert = model_cls.from_pretrained(model_name)
+    mybert = MyBert(bert, args['dim'], info_dict['num_class'])
+    mybert.fc1.register_forward_hook(get_activation('fc1'))
+
+def create_dataloader(args, inputs, labels):
+    encoded_dict = tokenizer.batch_encode_plus(
+            inputs,                           
+            add_special_tokens=True,      
+            max_length=args['max_length'],        
+            pad_to_max_length=True,
+            return_attention_mask=True,   
+            return_tensors='pt',
+    )
+    dataset = TensorDataset(encoded_dict["input_ids"], encoded_dict["attention_mask"], torch.tensor(labels))
+    return DataLoader(dataset, batch_size=args['batch_size'], shuffle=False)
+
+def get_outputs(args, info_dict, key):
+    info = info_dict[key]
+    dataloader = create_dataloader(args, info, [0]*len(info))
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    torch.cuda.empty_cache()
+    mybert.to(device)
+
+    mybert.eval()
+    outputs = []
+    for batch in dataloader:
+        input_ids = batch[0].to(device)
+        input_mask = batch[1].to(device)
+        
+        with torch.no_grad():        
+            out = mybert(input_ids, 
+                        attention_mask=input_mask)
+            outputs.append(activation['fc1'])
+    return np.concatenate(outputs)
+    
 
 def get_bert_embeddings(args, info_dict, key):
-    info = info_dict[key]
-    global mybert
     if mybert is None:
-        finetune(args, info_dict, key)
+        set_model(args, info_dict)
+    
 
 def get_word_embeddings(args, info_dict):
     tokenize_sentences = info_dict['tokenize_sentences']
