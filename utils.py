@@ -16,6 +16,8 @@ from transformers import (
         XLMModel, XLMTokenizer, \
         XLMRobertaModel, XLMRobertaTokenizer)
 
+mybert = None
+
 def ordered_word_pair(a, b):
     if a > b:
         return (b, a)
@@ -77,37 +79,6 @@ def tokenize(args, original_sentences):
     vocab_length = len(word_list)
     return tokenize_sentences, word_list, vocab_length
 
-def get_word_embeddings(args, tokenize_sentences, word_list):
-    embedding = args['word_embedding']
-    if embedding == 'word2vec':
-        wv_cbow_model = Word2Vec(sentences=tokenize_sentences, size=args['dim'], window=5, min_count=0, workers=4, sg=0, iter=200)
-        word_emb_dict = {word: wv_cbow_model[word].tolist() for word in word_list}
-    elif embedding == 'fasttext':
-        ft_sg_model = FastText(sentences=tokenize_sentences, size=args['dim'], window=5, min_count=0, workers=4, sg=0, iter = 200)
-        word_emb_dict = {word: ft_sg_model[word].tolist() for word in word_list}
-    elif embedding == 'glove':
-        corpus = Corpus() 
-        corpus.fit(tokenize_sentences, window=10)
-
-        glove = Glove(no_components=args['dim'], learning_rate=0.05) 
-        glove.fit(corpus.matrix, epochs=200, no_threads=4, verbose=True)
-        glove.add_dictionary(corpus.dictionary)
-
-        word_emb_dict = {word: glove.word_vectors[glove.dictionary[word]].tolist() for word in word_list}
-    return word_emb_dict
-
-def get_doc_embeddings(args, tokenize_sentences):
-    embedding = args['doc_embedding']
-    if embedding == 'doc2vec':
-        documents = [TaggedDocument(doc, [i]) for i, doc in enumerate(tokenize_sentences)]
-        model = Doc2Vec(documents, vector_size=args['dim'], window=5, min_count=1, workers=4, iter=200)
-
-        doc2vec_emb = []
-        for i in range(len(documents)):
-            doc2vec_emb.append(model.docvecs[i])
-        doc2vec_npy = np.array(doc2vec_emb)
-    return doc2vec_npy
-
 def get_model_cls(model):
     if model == "bert":
         return "bert-base-multilingual-uncased", BertTokenizer, BertModel
@@ -117,3 +88,75 @@ def get_model_cls(model):
         return "xlm-roberta-base", XLMRobertaTokenizer, XLMRobertaModel
     else:
         raise NameError(f"Unsupported model {model}.")
+
+def get_word2vec_embeddings(args, tokenize_sentences, word_list):
+    wv_cbow_model = Word2Vec(sentences=tokenize_sentences, size=args['dim'], window=5, min_count=0, workers=4, sg=0, iter=200)
+    word_emb_dict = {word: wv_cbow_model[word].tolist() for word in word_list}
+    return word_emb_dict
+
+def get_fasttext_embeddings(args, tokenize_sentences, word_list):
+    ft_sg_model = FastText(sentences=tokenize_sentences, size=args['dim'], window=5, min_count=0, workers=4, sg=0, iter = 200)
+    word_emb_dict = {word: ft_sg_model[word].tolist() for word in word_list}
+    return word_emb_dict
+
+def get_glove_embeddings(args, tokenize_sentences, word_list):
+    corpus = Corpus()
+    corpus.fit(tokenize_sentences, window=5)
+    glove = Glove(no_components=args['dim'], learning_rate=0.05)
+    glove.fit(corpus.matrix, epochs=200, no_threads=4, verbose=True)
+    glove.add_dictionary(corpus.dictionary)
+    word_emb_dict = {word: glove.word_vectors[glove.dictionary[word]].tolist() for word in word_list}
+    return word_emb_dict
+
+def finetune(args, info_dict, key):
+    info = info_dict[key]
+    global mybert
+    if mybert is None:
+        model_name, tokenizer_cls, model_cls = get_model_cls(args['model'])
+        tokenizer = tokenizer_cls.from_pretrained(model_name)
+        mybert = model_cls.from_pretrained(model_name)
+        mybert.to(args['device'])
+    tokenized = tokenizer(info, return_tensors="pt", padding=True, truncation=True)
+    input_ids = tokenized["input_ids"].to(args['device'])
+    attention_mask = tokenized["attention_mask"].to(args['device'])
+    with torch.no_grad():
+        last_hidden_states = mybert(input_ids, attention_mask=attention_mask)
+    return last_hidden_states[0][:,0,:].cpu().numpy()
+
+def get_bert_embeddings(args, info_dict, key):
+    info = info_dict[key]
+    global mybert
+    if mybert is None:
+        finetune(args, info_dict, key)
+
+def get_word_embeddings(args, info_dict):
+    tokenize_sentences = info_dict['tokenize_sentences']
+    word_list = info_dict['word_list']
+    embedding = args['word_embedding']
+    if embedding == 'word2vec':
+        return get_word2vec_embeddings(args, tokenize_sentences, word_list)
+    elif embedding == 'fasttext':
+        return get_fasttext_embeddings(args, tokenize_sentences, word_list)
+    elif embedding == 'glove':
+        return get_glove_embeddings(args, tokenize_sentences, word_list)
+    elif embedding == 'bert':
+        return get_bert_embeddings(args, info_dict, 'tokenized_sentences')
+    else:
+        raise NameError(f"Unsupported embedding {embedding}.")
+
+def get_doc2vec_embeddings(args, tokenize_sentences):
+    documents = [TaggedDocument(doc, [i]) for i, doc in enumerate(tokenize_sentences)]
+    model = Doc2Vec(documents, vector_size=args['dim'], window=5, min_count=1, workers=4, iter=200)
+
+    doc2vec_emb = [model.docvecs[i] for i in range(len(documents))]
+    return np.array(doc2vec_emb)
+
+def get_doc_embeddings(args, info_dict):
+    tokenize_sentences = info_dict['tokenize_sentences']
+    embedding = args['doc_embedding']
+    if embedding == 'doc2vec':
+        return get_doc2vec_embeddings(args, tokenize_sentences)
+    elif embedding == 'bert':
+        return get_bert_embeddings(args, info_dict, 'word_list')
+    else:
+        raise NameError(f"Unsupported embedding {embedding}.")

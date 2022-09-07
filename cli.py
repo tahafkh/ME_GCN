@@ -31,7 +31,7 @@ def get_args():
                         help='Validation portion.')
     parser.add_argument('--hidden_dim', type=int, default=25,
                         help='Hidden dimension.')
-    parser.add_argument('--decay', type=float, default=0,
+    parser.add_argument('--decay', type=float, default=5e-4,
                         help='Weight decay.')
     parser.add_argument('--epochs', type=int, default=2000,
                         help='Number of epochs to train.')
@@ -39,4 +39,8 @@ def get_args():
                         help='Tolerance for early stopping (# of epochs).')
     parser.add_argument('--min_frequency', type=int, default=5,
                         help='Minimum frequency of words.')
+    parser.add_argument('--model', type=str, default='bert',
+                        help='Model to use as node features.')
+    parser.add_argument('--max_length', type=int, default=150,
+                        help='Maximum sequence length.')
     return vars(parser.parse_args())

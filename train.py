@@ -31,7 +31,7 @@ if __name__=='__main__':
 
     train_sent = list(train['tweet'].values)
     test_sent = list(test['tweet'].values)
-    original_sentences = train_sent+test_sent
+    original_sentences = train_sent + test_sent
     train_size = len(train_sent)
     test_size = len(test_sent)
 
@@ -46,8 +46,8 @@ if __name__=='__main__':
     train_labels = encoder.transform(train_labels)
     test_labels = encoder.transform(test_labels)
 
-    labels = train_labels.tolist() + test_labels.tolist()
-    labels = torch.LongTensor(labels).to(device)
+    all_labels = train_labels.tolist() + test_labels.tolist()
+    labels = torch.LongTensor(all_labels).to(device)
 
     tokenize_sentences, word_list, vocab_length = tokenize(args, original_sentences)
 
@@ -55,10 +55,19 @@ if __name__=='__main__':
 
     #word to id dict
     word_id_map = {word_list[i]: i for i in range(vocab_length)}         
+    
+    # info dict
+    info_dict = {
+        'word_list': word_list,
+        'tokenize_sentences': tokenize_sentences,
+        'all_labels': all_labels,
+        'train_size': train_size,
+        'num_class': num_class,
+    }
 
-    word_emb_dict = get_word_embeddings(args, tokenize_sentences, word_list)
+    word_emb_dict = get_word_embeddings(args, info_dict)
 
-    doc2vec_npy = get_doc_embeddings(args, tokenize_sentences)
+    doc2vec_npy = get_doc_embeddings(args, info_dict)
 
     node_size = train_size + vocab_length + test_size
     adj_tensor = []

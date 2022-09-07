@@ -33,8 +33,7 @@ class MultiGCN(nn.Module):
         if self.pooling == 'max':
             return torch.max(x,0)[0]
         if self.pooling == 'min':
-            return torch.min(x,0)[0]
-            
+            return torch.min(x,0)[0] 
 class MyBert(nn.Module):
     def __init__(self, bert, word_embedding, hidden_size=768, num_classes=2):
         super(MyBert, self).__init__()
