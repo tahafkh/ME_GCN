@@ -5,11 +5,6 @@ import time
 from math import log
 import scipy.sparse as sp
 
-import nltk
-from nltk.corpus import stopwords
-
-
-
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report
 

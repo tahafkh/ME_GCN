@@ -9,7 +9,6 @@ import emoji
 import wordsegment
 from parsivar import Normalizer
 from sklearn.model_selection import train_test_split
-import nltk
 
 RAW_DATA_DIRECTORY = 'raw_data'
 DATA_DIRECTORY = 'data'
