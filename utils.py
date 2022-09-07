@@ -168,7 +168,7 @@ def set_model(args, info_dict):
     global tokenizer
     model_name, tokenizer_cls, model_cls = get_model_cls(args['model'])
     tokenizer = tokenizer_cls.from_pretrained(model_name)
-    bert = model_cls.from_pretrained(model_name)
+    bert = model_cls.from_pretrained(model_name, return_dict=False)
     mybert = MyBert(bert, args['dim'], info_dict['num_class'])
     mybert.fc1.register_forward_hook(get_activation('fc1'))
 
