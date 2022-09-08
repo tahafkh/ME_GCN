@@ -37,12 +37,12 @@ class MyBert(nn.Module):
     def __init__(self, bert, word_embedding, num_classes=2):
         super(MyBert, self).__init__()
         self.bert = bert
-        embedding_dim = bert.config.to_dict()['hidden_size']
-        self.fc1 = nn.Linear(embedding_dim, word_embedding)
+        self.embedding_dim = bert.config.hidden_size
+        self.fc1 = nn.Linear(self.embedding_dim, word_embedding)
         self.fc2 = nn.Linear(word_embedding, num_classes)
 
     def forward(self, input_ids, attention_mask):
-        sequence_output, _ = self.bert(input_ids, attention_mask=attention_mask)
-        out = self.fc1(sequence_output)
+        sequence_output, pooled_output = self.bert(input_ids, attention_mask=attention_mask)
+        out = self.fc1(sequence_output[:, 0, :].view(-1, self.embedding_dim))
         out = self.fc2(out)
         return out
