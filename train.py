@@ -45,6 +45,7 @@ if __name__=='__main__':
     labels = torch.LongTensor(all_labels).to(device)
 
     tokenize_sentences, word_list, vocab_length = tokenize(args, original_sentences)
+    sentences = [' '.join(sentence) for sentence in tokenize_sentences]
 
     del original_sentences
 
@@ -55,6 +56,7 @@ if __name__=='__main__':
     info_dict = {
         'word_list': word_list,
         'tokenize_sentences': tokenize_sentences,
+        'sentences': sentences, 
         'all_labels': all_labels,
         'train_size': train_size,
         'num_class': num_class,

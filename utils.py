@@ -133,9 +133,9 @@ def get_glove_embeddings(args, tokenize_sentences, word_list):
 
 def finetune(args, info_dict):
     train_size = info_dict['train_size']
-    train = info_dict['tokenize_sentences'][:train_size]
-    labels = info_dict['all_labels'][:train_size]
-    dataloader = create_dataloader(args, train, labels)
+    train_data = info_dict['sentences'][:train_size]
+    train_labels = info_dict['all_labels'][:train_size]
+    dataloader = create_dataloader(args, train_data, train_labels)
 
     global mybert
 
@@ -167,7 +167,7 @@ def set_model(args, info_dict):
     global mybert
     global tokenizer
     model_name, tokenizer_cls, model_cls = get_model_cls(args['model'])
-    tokenizer = tokenizer_cls.from_pretrained(model_name)
+    tokenizer = tokenizer_cls.from_pretrained(model_name, do_lower_case=(args['model']=="bert"))
     bert = model_cls.from_pretrained(model_name, return_dict=False)
     mybert = MyBert(bert, args['dim'], info_dict['num_class'])
     mybert.fc1.register_forward_hook(get_activation('fc1'))
@@ -230,6 +230,6 @@ def get_doc_embeddings(args, info_dict):
     if embedding == 'doc2vec':
         return get_doc2vec_embeddings(args, tokenize_sentences)
     elif embedding == 'bert':
-        return get_bert_embeddings(args, info_dict, 'tokenize_sentences')
+        return get_bert_embeddings(args, info_dict, 'sentences')
     else:
         raise NameError(f"Unsupported embedding {embedding}.")
