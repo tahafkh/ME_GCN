@@ -33,6 +33,7 @@ class MultiGCN(nn.Module):
             return torch.max(x,0)[0]
         if self.pooling == 'min':
             return torch.min(x,0)[0] 
+
 class MyBert(nn.Module):
     def __init__(self, bert, word_embedding, num_classes=2):
         super(MyBert, self).__init__()
@@ -43,6 +44,7 @@ class MyBert(nn.Module):
 
     def forward(self, input_ids, attention_mask):
         sequence_output, pooled_output = self.bert(input_ids, attention_mask=attention_mask)
-        out = self.fc1(sequence_output[:, 0, :].view(-1, self.embedding_dim))
+        out = self.fc1(sequence_output[:, 0, :])
         out = self.fc2(out)
         return out
+        

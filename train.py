@@ -228,7 +228,9 @@ if __name__=='__main__':
 
 
     final_acc_list = []
-    for _ in range(args['runs']):
+    print('Training...')
+    for i in range(args['runs']):
+        print('Run: ', i + 1)
         model = MultiGCN(nfeat=features.shape[1], nhid=args['hidden_dim'], nclass=num_class, dropout=args['dropout'],
                         dim=args['dim'], pooling=args['pooling']).to(device)
         optimizer = optim.Adam(model.parameters(), lr=args['lr'], weight_decay=args['decay'])
@@ -236,7 +238,7 @@ if __name__=='__main__':
 
         val_loss = []
         for epoch in range(args['epochs']):
-
+            print('Epoch: ', epoch + 1)
             t = time.time()
             model.train()
             optimizer.zero_grad()

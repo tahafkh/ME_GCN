@@ -12,6 +12,8 @@ from gensim.models import FastText
 
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 
+from sklearn.metrics import classification_report
+
 from transformers import (
         BertModel, BertTokenizer, \
         XLMModel, XLMTokenizer, \
@@ -145,9 +147,14 @@ def finetune(args, info_dict):
     torch.cuda.empty_cache()
     mybert.to(device)
 
+    all_predicted = []
+    all_labels = []
+
     mybert.train()
     epochs = 5
+    print('Start finetuning...')
     for epoch in range(epochs):
+        print('Epoch: ', epoch + 1)
         for batch in dataloader:
             input_ids = batch[0].to(device)
             input_mask = batch[1].to(device)
@@ -160,6 +167,12 @@ def finetune(args, info_dict):
                 loss = criterion(out, labels)
                 loss.backward()
                 optimizer.step()
+                _, predicted = torch.max(out, -1)
+                all_predicted.extend(predicted.tolist())
+                all_labels.extend(labels.tolist())
+
+        print("Report:\n"+classification_report(np.array(all_labels).reshape(-1),
+            np.array(all_predicted).reshape(-1),digits=4))
     mybert.to('cpu')
 
 
