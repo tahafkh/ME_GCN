@@ -132,10 +132,10 @@ def read_file(data):
     elif data == 'nltk':
         nltk.download('twitter_samples')
         pos = twitter_samples.strings('positive_tweets.json')
-        pos_labels = np.array(['POS' for i in range(len(pos))])
+        pos_labels = ['POS' for i in range(len(pos))]
         neg = twitter_samples.strings('negative_tweets.json')
-        neg_labels = np.array(['NEG' for i in range(len(neg))])
-        
+        neg_labels = ['NEG' for i in range(len(neg))]
+
         train_tweets = np.array(pos[:int(len(pos)*0.8)] + neg[:int(len(neg)*0.8)])
         train_labels = np.array(pos_labels[:int(len(pos_labels)*0.8)] + neg_labels[:int(len(neg_labels)*0.8)])
         train_ids = np.array(range(1, len(train_tweets)+1))
