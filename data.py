@@ -5,6 +5,9 @@ from math import *
 import pandas as pd
 import numpy as np
 
+import nltk
+from nltk.corpus import twitter_samples
+
 import emoji
 import wordsegment
 from sklearn.model_selection import train_test_split
@@ -100,7 +103,7 @@ def segment_hashtag(sents):
 
 def read_file(data):
     fa = (data == 'fa')
-    if data == 'en':
+    if data == 'olid':
         train_name = 'olid-training-v1.0.tsv'
         train = pd.read_csv(os.path.join(RAW_DATA_DIRECTORY, train_name), sep='\t', keep_default_na=False)
         train_ids = np.array(train['id'].values)
@@ -113,7 +116,7 @@ def read_file(data):
         test_tweets = np.array(test['tweet'].values)
         test_labels = np.array(test['subtask_a'].values)
 
-    elif data == 'de':
+    elif data == 'germeval':
         train_name = 'germeval2018.training.txt'
         train = pd.read_csv(os.path.join(RAW_DATA_DIRECTORY, train_name), sep='\t', keep_default_na=False, header=None)
         train_ids = np.array(range(1,len(train)+1))
@@ -126,6 +129,23 @@ def read_file(data):
         test_tweets = np.array(test[0].values)
         test_labels = np.array(test[1].values)
     
+    elif data == 'nltk':
+        nltk.download('twitter_samples')
+        pos = twitter_samples.strings('positive_tweets.json')
+        pos_labels = np.array(['POS' for i in range(len(pos))])
+        neg = twitter_samples.strings('negative_tweets.json')
+        neg_labels = np.array(['NEG' for i in range(len(neg))])
+        
+        train_tweets = np.array(pos[:int(len(pos)*0.8)] + neg[:int(len(neg)*0.8)])
+        train_labels = np.array(pos_labels[:int(len(pos_labels)*0.8)] + neg_labels[:int(len(neg_labels)*0.8)])
+        train_ids = np.array(range(1, len(train_tweets)+1))
+
+        test_tweets = np.array(pos[int(len(pos)*0.8):] + neg[int(len(neg)*0.8):])
+        test_labels = np.array(pos_labels[int(len(pos_labels)*0.8):] + neg_labels[int(len(neg_labels)*0.8):])
+        test_ids = np.array(range(1, len(test_tweets)+1))
+
+
+
     else:
         raise ValueError(f'Data {data} not supported.')
 
@@ -142,7 +162,7 @@ def sample_data(data, sample_size):
 
 def prepare_data(args):
     wordsegment.load()
-    train, test = read_file(args['data'])
+    train, test = read_file(args['dataset'])
     if not args['use_all']:
         train = sample_data(train, args['train_size'])
         test = sample_data(test, args['test_size'])

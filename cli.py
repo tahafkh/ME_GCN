@@ -45,4 +45,6 @@ def get_args():
                         help='Maximum sequence length.')
     parser.add_argument('--batch_size', type=int, default=64,
                         help='Batch size.')
+    parser.add_argument('--dataset', type=str, default='olid',
+                        help='Dataset to use.')
     return vars(parser.parse_args())
