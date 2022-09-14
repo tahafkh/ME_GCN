@@ -34,17 +34,19 @@ class MultiGCN(nn.Module):
         if self.pooling == 'min':
             return torch.min(x,0)[0] 
 
-class MyBert(nn.Module):
-    def __init__(self, bert, word_embedding, num_classes=2):
-        super(MyBert, self).__init__()
+class MiniBert(nn.Module):
+    def __init__(self, bert, args, word_embedding, num_classes=2):
+        super(MiniBert, self).__init__()
         self.bert = bert
         self.embedding_dim = bert.config.hidden_size
+        self.dropout = nn.Dropout(args['dropout'])
         self.fc1 = nn.Linear(self.embedding_dim, word_embedding)
         self.fc2 = nn.Linear(word_embedding, num_classes)
 
     def forward(self, input_ids, attention_mask):
-        sequence_output, pooled_output = self.bert(input_ids, attention_mask=attention_mask)
-        out = self.fc1(sequence_output[:, 0, :])
+        outputs = self.bert(input_ids, attention_mask=attention_mask)
+        pooled_output = self.dropout(outputs[1])
+        out = self.fc1(pooled_output)
         out = self.fc2(out)
         return out
         

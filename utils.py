@@ -19,7 +19,7 @@ from transformers import (
         XLMModel, XLMTokenizer, \
         XLMRobertaModel, XLMRobertaTokenizer)
 
-from models import MyBert
+from models import MiniBert
 
 mybert = None
 tokenizer = None
@@ -182,7 +182,7 @@ def set_model(args, info_dict):
     model_name, tokenizer_cls, model_cls = get_model_cls(args['model'])
     tokenizer = tokenizer_cls.from_pretrained(model_name, do_lower_case=(args['model']=="bert"))
     bert = model_cls.from_pretrained(model_name, return_dict=False)
-    mybert = MyBert(bert, args['dim'], info_dict['num_class'])
+    mybert = MiniBert(bert, args, args['dim'], info_dict['num_class'])
     mybert.fc1.register_forward_hook(get_activation('fc1'))
     finetune(args, info_dict)
 
